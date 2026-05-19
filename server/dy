@@ -1,0 +1,1 @@
+{"message":"Validation error","issues":[{"code":"invalid_type","expected":"string","received":"undefined","path":["nome"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["email"],"message":"Required"},{"code":"invalid_type","expected":"string","received":"undefined","path":["senha"],"message":"Required"}]}
