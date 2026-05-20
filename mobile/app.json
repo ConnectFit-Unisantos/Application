@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "ConnectFit",
+    "slug": "connectfit",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.connectfit.mobile"
+    },
+    "android": {
+      "package": "com.connectfit.mobile"
+    }
+  }
+}
