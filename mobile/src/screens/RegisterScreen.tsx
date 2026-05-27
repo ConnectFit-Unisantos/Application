@@ -9,8 +9,8 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Header from '../components/Header';
@@ -116,7 +116,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.dark} />
-      <Header />
+      <Header onLogoPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })} />
 
       <KeyboardAvoidingView
         style={styles.flex}

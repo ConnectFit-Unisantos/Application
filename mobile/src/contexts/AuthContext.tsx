@@ -34,17 +34,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** Restaura sessão persistida no AsyncStorage ao abrir o app. */
   useEffect(() => {
     async function restoreSession() {
-      const [storedToken, storedUser] = await Promise.all([
-        authService.getStoredToken(),
-        authService.getStoredUser(),
-      ]);
+      try {
+        const [storedToken, storedUser] = await Promise.all([
+          authService.getStoredToken(),
+          authService.getStoredUser(),
+        ]);
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(storedUser);
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(storedUser);
+        }
+      } catch (e) {
+        console.log('[AuthContext] restoreSession failed:', e);
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     }
 
     restoreSession();

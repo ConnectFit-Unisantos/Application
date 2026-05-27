@@ -9,8 +9,10 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Header from '../components/Header';
@@ -70,7 +72,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
     try {
       await handleLogin({ email: email.trim().toLowerCase(), senha });
-      navigation.navigate('Home');
+      // Depois do login, navega para Home
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch {
       // erro já tratado pelo hook — exibido no banner abaixo do formulário
     }
@@ -79,7 +82,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.dark} />
-      <Header />
+      <Header onLogoPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })} />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -186,6 +189,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+
   );
 }
 
@@ -194,7 +198,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.dark,
   },
   flex: {
     flex: 1,

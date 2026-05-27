@@ -7,8 +7,9 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
+
+import AppSafeArea from '../components/AppSafeArea';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,6 +19,7 @@ import TrainerCard from '../components/TrainerCard';
 import { theme } from '../styles/theme';
 import { Trainer } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { useAuth } from '../hooks/useAuth';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -65,14 +67,20 @@ const MOCK_TRAINERS: Trainer[] = [
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [search, setSearch] = useState('');
+  const { user } = useAuth();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <AppSafeArea style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.dark} />
 
       <Header
-        showConnectButton
-        onConnectPress={() => navigation.navigate('Login')}
+        showConnectButton={!user}
+        onConnectPress={() => {
+          if (user) navigation.navigate('Profile');
+          else navigation.navigate('Login');
+        }}
+        onLogoPress={() => navigation.replace('Home')}
+
       />
 
       <ScrollView
@@ -190,7 +198,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </AppSafeArea>
   );
 }
 

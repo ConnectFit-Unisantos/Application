@@ -7,6 +7,7 @@ import { useAuthContext } from '../contexts/AuthContext';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import { theme } from '../styles/theme';
 
 // ─── Tipos das rotas ──────────────────────────────────────────────────────────
@@ -15,7 +16,9 @@ export type RootStackParamList = {
   Home: undefined;
   Login: undefined;
   Register: undefined;
+  Profile: undefined;
 };
+
 
 // ─── Stack ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +55,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
