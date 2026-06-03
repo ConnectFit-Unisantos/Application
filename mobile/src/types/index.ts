@@ -8,6 +8,14 @@ export interface User {
   criadoEm: string;
 }
 
+export interface Review {
+  id: string;
+  nome: string;
+  nota: number;
+  tempo: string;
+  texto: string;
+}
+
 export interface Trainer {
   id: string;
   nome: string;
@@ -18,6 +26,10 @@ export interface Trainer {
   preco: number;
   certificado: boolean;
   foto?: string;
+  bio?: string;
+  experiencia?: number;
+  disponibilidade?: string[];
+  avaliacoesRecentes?: Review[];
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────

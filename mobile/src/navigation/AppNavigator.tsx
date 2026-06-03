@@ -8,7 +8,9 @@ import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import TrainerDetailScreen from '../screens/TrainerDetailScreen';
 import { theme } from '../styles/theme';
+import { Trainer } from '../types';
 
 // ─── Tipos das rotas ──────────────────────────────────────────────────────────
 
@@ -17,6 +19,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Profile: undefined;
+  TrainerDetail: { trainer: Trainer };
 };
 
 
@@ -56,6 +59,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="TrainerDetail" component={TrainerDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -12,6 +12,7 @@ import { theme } from '../styles/theme';
 
 interface TrainerCardProps {
   trainer: Trainer;
+  onPress?: () => void;
 }
 
 /**
@@ -19,9 +20,9 @@ interface TrainerCardProps {
  * tags de especialidade, avaliação e preço por hora.
  * Layout mobile: coluna única, largura total.
  */
-export default function TrainerCard({ trainer }: TrainerCardProps) {
+export default function TrainerCard({ trainer, onPress }: TrainerCardProps) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.92}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.92} onPress={onPress}>
       {/* ── Foto ── */}
       <View style={styles.imageContainer}>
         {trainer.foto ? (
