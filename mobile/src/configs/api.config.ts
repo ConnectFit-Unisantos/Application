@@ -1,25 +1,32 @@
 import { Platform } from 'react-native';
 
 /**
- * Resolução do host da API:
+ * Resolução do host da API
  *
- * - Android Emulator  → 10.0.2.2  (redireciona para o localhost do host)
- * - iOS Simulator     → localhost
- * - Dispositivo físico → substitua pela IP local da máquina (ex.: 192.168.1.100)
+ * Prioridade:
+ *  1. EXPO_PUBLIC_API_HOST no .env  → sempre usado se definido (ideal para dispositivo físico)
+ *  2. 10.0.2.2                      → emulador Android (redireciona para localhost do host)
+ *  3. localhost                      → simulador iOS
+ *
+ * Para dispositivo físico: copie .env.example → .env e defina o IP do seu computador.
+ * Para descobrir seu IP: rode `ipconfig` (Windows) ou `ifconfig` (Mac/Linux).
  */
-const HOST =
-  Platform.OS === 'android'
-    ? '10.0.2.2'   // emulador Android
-    : 'localhost';  // simulador iOS
+const HOST = (() => {
+  if (process.env.EXPO_PUBLIC_API_HOST) {
+    return process.env.EXPO_PUBLIC_API_HOST;
+  }
+  if (Platform.OS === 'android') return '10.0.2.2';
+  return 'localhost';
+})();
 
-const PORT = 3333;
+const PORT = process.env.EXPO_PUBLIC_API_PORT ?? '3333';
 
 export const API_CONFIG = {
   BASE_URL: `http://${HOST}:${PORT}`,
 
   ENDPOINTS: {
-    LOGIN: '/api/auth/login',
+    LOGIN:    '/api/auth/login',
     REGISTER: '/api/auth/register',
-    HEALTH: '/health',
+    HEALTH:   '/health',
   },
 } as const;
