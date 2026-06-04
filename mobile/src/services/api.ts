@@ -26,13 +26,21 @@ async function request<T>(
     }
   }
 
-  const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+  const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+
+  const response = await fetch(url, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  const data: unknown = await response.json();
+  // Tenta parsear como JSON; se falhar, usa text para evitar erro silencioso
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    data = await response.text();
+  }
 
   if (!response.ok) {
     const message =

@@ -5,8 +5,11 @@ import cors from 'cors';
 import { authRoutes } from './routes/auth.routes';
 import { errorHandler } from './middlewares/errorHandler';
 import { connectDb } from './services/db';
+import { getEnv } from './config/env';
 
 const app = express();
+
+const env = getEnv();
 
 connectDb().catch((err) => {
   // eslint-disable-next-line no-console
@@ -14,8 +17,8 @@ connectDb().catch((err) => {
   process.exit(1);
 });
 
-
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? true, credentials: true }));
+const corsOrigin = env.CORS_ORIGIN ? env.CORS_ORIGIN : true;
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (_req, res) => {
@@ -26,7 +29,9 @@ app.use('/api/auth', authRoutes);
 
 app.use(errorHandler);
 
-const port = Number(process.env.PORT ?? 3333);
+const port = env.PORT;
+// env.PORT já valida se existe e é numérico positivo
+
 app.listen(port, () => {
   // eslint-disable-next-line no-console
   console.log(`connectfit-server running on http://localhost:${port}`);
