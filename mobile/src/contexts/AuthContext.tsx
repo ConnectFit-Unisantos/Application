@@ -18,7 +18,9 @@ interface AuthContextData {
   login: (input: LoginInput) => Promise<AuthResponse>;
   register: (input: RegisterInput) => Promise<AuthResponse>;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
+
 
 // ─── Criação ──────────────────────────────────────────────────────────────────
 
@@ -74,6 +76,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  async function refreshSession() {
+    // Recarrega AsyncStorage e atualiza o estado em memória
+    try {
+      const [storedToken, storedUser] = await Promise.all([
+        authService.getStoredToken(),
+        authService.getStoredUser(),
+      ]);
+
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(storedUser);
+      } else {
+        setToken(null);
+        setUser(null);
+      }
+    } catch (e) {
+      console.log('[AuthContext] refreshSession failed:', e);
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -84,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshSession,
       }}
     >
       {children}

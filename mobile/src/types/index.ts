@@ -6,7 +6,17 @@ export interface User {
   email: string;
   tipo: 'aluno' | 'personal';
   criadoEm: string;
+
+  // Dados do personal (preenchidos quando tipo='personal')
+  formacao: string[];
+  servicos: string[];
+  especializacao: string[];
+  precoHora: string;
+  disponibilidade: string;
+  bio: string;
+  certificacoes: string[];
 }
+
 
 export interface Review {
   id: string;

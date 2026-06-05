@@ -39,8 +39,15 @@ async function registerAluno(input) {
             nome: user.nome,
             email: user.email,
             tipo: user.tipo,
-            criadoEm: user.criadoEm
-        }
+            criadoEm: user.criadoEm,
+            formacao: user.formacao,
+            servicos: user.servicos,
+            especializacao: user.especializacao,
+            precoHora: user.precoHora,
+            disponibilidade: user.disponibilidade,
+            bio: user.bio,
+            certificacoes: user.certificacoes,
+        },
     };
 }
 async function login(input) {
@@ -64,7 +71,14 @@ async function login(input) {
             nome: user.nome,
             email: user.email,
             tipo: user.tipo,
-            criadoEm: user.criadoEm
-        }
+            criadoEm: user.criadoEm,
+            formacao: user.formacao,
+            servicos: user.servicos,
+            especializacao: user.especializacao,
+            precoHora: user.precoHora,
+            disponibilidade: user.disponibilidade,
+            bio: user.bio,
+            certificacoes: user.certificacoes,
+        },
     };
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,13 @@ import {
   StatusBar,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 
 import AppSafeArea from '../components/AppSafeArea';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import Header from '../components/Header';
 import StatCard from '../components/StatCard';
@@ -23,80 +25,23 @@ import { theme } from '../styles/theme';
 import { Trainer } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../hooks/useAuth';
+import { personalService } from '../services/personalService';
+
 
 // Remove acentos e normaliza caixa para comparações tolerantes
+
 function normalizeStr(text: string): string {
   return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
+
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
 };
 
-// ─── Dados de exemplo (substituir por chamada à API quando endpoint existir) ──
 
-const MOCK_TRAINERS: Trainer[] = [
-  {
-    id: '1',
-    nome: 'Ana Silva',
-    localizacao: 'São Paulo - SP',
-    especialidades: ['Musculação', 'Emagrecimento', 'Hipertrofia'],
-    avaliacao: 4.9,
-    avaliacoes: 127,
-    preco: 120,
-    certificado: true,
-    foto: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&fit=crop',
-    bio: 'Personal trainer certificada com mais de 8 anos de experiência. Especializada em transformação corporal e ganho de massa muscular. Metodologia personalizada para cada aluno.',
-    experiencia: 8,
-    disponibilidade: ['Segunda', 'Quarta', 'Sexta'],
-    avaliacoesRecentes: [
-      { id: 'r1', nome: 'João Silva', nota: 5, tempo: 'Há 2 semanas', texto: 'Excelente profissional! Consegui atingir meus objetivos em 3 meses.' },
-      { id: 'r2', nome: 'Maria Santos', nota: 5, tempo: 'Há 1 mês', texto: 'Muito atenciosa e comprometida. Recomendo!' },
-      { id: 'r3', nome: 'Pedro Costa', nota: 4, tempo: 'Há 2 meses', texto: 'Ótimos treinos, muita dedicação aos alunos.' },
-    ],
-  },
-  {
-    id: '2',
-    nome: 'Carlos Mendes',
-    localizacao: 'Rio de Janeiro - RJ',
-    especialidades: ['CrossFit', 'Funcional', 'Performance'],
-    avaliacao: 4.8,
-    avaliacoes: 98,
-    preco: 150,
-    certificado: true,
-    foto: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&fit=crop',
-    bio: 'Especialista em CrossFit e treinamento funcional com 6 anos de experiência. Atleta competitivo com metodologia voltada para alta performance e resultados expressivos.',
-    experiencia: 6,
-    disponibilidade: ['Terça', 'Quinta', 'Sábado'],
-    avaliacoesRecentes: [
-      { id: 'r1', nome: 'Lucas Ferreira', nota: 5, tempo: 'Há 1 semana', texto: 'Carlos é incrível! Minha performance melhorou muito.' },
-      { id: 'r2', nome: 'Ana Paula', nota: 5, tempo: 'Há 3 semanas', texto: 'Treinos desafiadores e muito profissional.' },
-      { id: 'r3', nome: 'Roberto Lima', nota: 4, tempo: 'Há 1 mês', texto: 'Ótimo personal, recomendo para quem quer evoluir no CrossFit.' },
-    ],
-  },
-  {
-    id: '3',
-    nome: 'Mariana Costa',
-    localizacao: 'Belo Horizonte - MG',
-    especialidades: ['Yoga', 'Pilates', 'Bem-estar'],
-    avaliacao: 5.0,
-    avaliacoes: 156,
-    preco: 100,
-    certificado: true,
-    foto: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&fit=crop',
-    bio: 'Instrutora de Yoga e Pilates com formação internacional e 10 anos dedicados ao bem-estar dos alunos. Abordagem holística e completamente individualizada para cada pessoa.',
-    experiencia: 10,
-    disponibilidade: ['Segunda', 'Terça', 'Quinta', 'Sexta'],
-    avaliacoesRecentes: [
-      { id: 'r1', nome: 'Carla Dias', nota: 5, tempo: 'Há 3 dias', texto: 'A melhor professora de Yoga que já tive!' },
-      { id: 'r2', nome: 'Felipe Souza', nota: 5, tempo: 'Há 2 semanas', texto: 'As aulas de Pilates transformaram minha postura completamente.' },
-      { id: 'r3', nome: 'Sandra Costa', nota: 5, tempo: 'Há 1 mês', texto: 'Profissional incrível, muito atenciosa e dedicada.' },
-    ],
-  },
-];
 
 // ─── Tela ─────────────────────────────────────────────────────────────────────
-
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [search, setSearch] = useState('');
   const [selectedEspecialidade, setSelectedEspecialidade] = useState<string | null>(null);
@@ -105,14 +50,53 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [showLocModal, setShowLocModal] = useState(false);
   const { user } = useAuth();
 
-  const todasEspecialidades = useMemo(() => {
-    const set = new Set<string>();
-    MOCK_TRAINERS.forEach((t) => t.especialidades.forEach((e) => set.add(e)));
-    return Array.from(set).sort();
+  // Personais reais do backend
+  const [personals, setPersonals] = useState<Trainer[] | null>(null);
+  const [isLoadingPersonals, setIsLoadingPersonals] = useState(true);
+
+
+  const loadPersonals = React.useCallback(async () => {
+    try {
+      setIsLoadingPersonals(true);
+      const res = await personalService.listPersonals();
+
+      setPersonals(Array.isArray(res) ? (res as Trainer[]) : []);
+    } catch {
+      setPersonals([]);
+    } finally {
+      setIsLoadingPersonals(false);
+    }
   }, []);
 
-  const filteredTrainers = useMemo(() => {
-    return MOCK_TRAINERS.filter((trainer) => {
+
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadPersonals();
+    }, [loadPersonals])
+  );
+
+
+  // Mock: mostrar somente quando já carregou do backend e retornou 0 pessoais
+  // Fonte dos cards deve vir do backend.
+  // Não usar mock quando não vierem dados, para evitar “reset aparente” ao navegar.
+  const sourceTrainers = isLoadingPersonals || personals === null ? [] : personals;
+
+
+
+
+
+
+  const todasEspecialidades = useMemo(() => {
+
+    const set = new Set<string>();
+    sourceTrainers.forEach((t) => t.especialidades.forEach((e) => set.add(e)));
+    return Array.from(set).sort();
+  }, [sourceTrainers]);
+
+
+  const filteredTrainers: Trainer[] = useMemo(() => {
+    const out = sourceTrainers.filter((trainer) => {
       // Busca por nome
       const matchesSearch =
         search.trim() === '' ||
@@ -124,22 +108,31 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         trainer.especialidades.includes(selectedEspecialidade);
 
       // Filtro de localidade (estado e/ou cidade)
+      // IMPORTANTE: o backend pode retornar localizacao vazio.
+      // Nesse caso, não faz sentido filtrar por UF/cidade -> consideramos como "matches".
       const matchesLocalidade = (() => {
         if (!localidade) return true;
-        // Formato do mock: "Cidade - UF"
+        if (!trainer.localizacao || trainer.localizacao.trim() === '') return true;
+        if (!trainer.localizacao || trainer.localizacao.trim() === '') return true;
+
         const partes = trainer.localizacao.split(' - ');
         const uf = partes[partes.length - 1]?.trim() ?? '';
         const cidade = partes.slice(0, -1).join(' - ').trim();
         if (localidade.cidade) {
-          return uf === localidade.uf &&
-            normalizeStr(cidade) === normalizeStr(localidade.cidade);
+          return (
+            uf === localidade.uf &&
+            normalizeStr(cidade) === normalizeStr(localidade.cidade)
+          );
         }
         return uf === localidade.uf;
       })();
 
       return matchesSearch && matchesEspecialidade && matchesLocalidade;
     });
-  }, [search, selectedEspecialidade, localidade]);
+
+    return out;
+  }, [search, selectedEspecialidade, localidade, sourceTrainers]);
+
 
   return (
     <AppSafeArea style={styles.safeArea}>
@@ -165,6 +158,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         >
           <Pressable style={styles.modalContent} onPress={() => {}}>
             <Text style={styles.modalTitle}>Modalidade de Treino</Text>
+
             <TouchableOpacity
               style={[
                 styles.modalOption,
@@ -185,6 +179,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 Todas as modalidades
               </Text>
             </TouchableOpacity>
+
             {todasEspecialidades.map((esp) => (
               <TouchableOpacity
                 key={esp}
@@ -219,7 +214,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           else navigation.navigate('Login');
         }}
         onLogoPress={() => navigation.replace('Home')}
-
       />
 
       <ScrollView
@@ -230,12 +224,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       >
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>
-            Encontre seu Personal Trainer ideal
-          </Text>
+          <Text style={styles.heroTitle}>Encontre seu Personal Trainer ideal</Text>
           <Text style={styles.heroSubtitle}>
-            Conectamos você a profissionais qualificados para transformar sua
-            jornada fitness
+            Conectamos você a profissionais qualificados para transformar sua jornada fitness
           </Text>
         </View>
 
@@ -243,11 +234,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <View style={styles.statsRow}>
           <StatCard
             icon={
-              <Ionicons
-                name="people-outline"
-                size={22}
-                color={theme.colors.text.primary}
-              />
+              <Ionicons name="people-outline" size={22} color={theme.colors.text.primary} />
             }
             value="500+"
             label="Personal Trainers"
@@ -280,11 +267,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <View style={styles.searchSection}>
           {/* Barra de busca */}
           <View style={styles.searchBar}>
-            <Ionicons
-              name="search-outline"
-              size={18}
-              color={theme.colors.text.muted}
-            />
+            <Ionicons name="search-outline" size={18} color={theme.colors.text.muted} />
             <TextInput
               style={styles.searchInput}
               placeholder="Buscar personal trainers..."
@@ -318,9 +301,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 name="chevron-down"
                 size={14}
                 color={
-                  selectedEspecialidade
-                    ? theme.colors.white
-                    : theme.colors.text.secondary
+                  selectedEspecialidade ? theme.colors.white : theme.colors.text.secondary
                 }
               />
             </TouchableOpacity>
@@ -360,9 +341,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         {/* ── Lista de Personals ────────────────────────────────────────────── */}
         <View style={styles.listSection}>
-          <Text style={styles.listTitle}>
-            {filteredTrainers.length} Personals Disponíveis
-          </Text>
+          <Text style={styles.listTitle}>{filteredTrainers.length} Personals Disponíveis</Text>
 
           {filteredTrainers.length > 0 ? (
             filteredTrainers.map((trainer) => (
@@ -374,11 +353,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons
-                name="search-outline"
-                size={48}
-                color={theme.colors.text.muted}
-              />
+              <Ionicons name="search-outline" size={48} color={theme.colors.text.muted} />
               <Text style={styles.emptyText}>Nenhum personal encontrado</Text>
             </View>
           )}
@@ -393,7 +368,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.dark, // status bar area fica escura
+    backgroundColor: theme.colors.dark,
   },
   scroll: {
     flex: 1,
@@ -566,3 +541,4 @@ const styles = StyleSheet.create({
     fontWeight: theme.fonts.weights.semibold,
   },
 });
+

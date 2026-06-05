@@ -41,6 +41,15 @@ const userSchema = new mongoose_1.Schema({
     senhaHash: { type: String, required: true },
     // regra do projeto: começa como aluno; depois pode virar personal
     tipo: { type: String, required: true, enum: ['aluno', 'personal'], default: 'aluno' },
-    criadoEm: { type: Date, default: Date.now }
+    criadoEm: { type: Date, default: Date.now },
+    // Dados do personal (opcionais; preenchidos quando tipo='personal')
+    formacao: { type: [String], default: [] },
+    servicos: { type: [String], default: [] },
+    especializacao: { type: [String], default: [] },
+    // Por enquanto string (você vai evoluir depois para números/enum)
+    precoHora: { type: String, default: '' },
+    disponibilidade: { type: String, default: '' },
+    bio: { type: String, default: '' },
+    certificacoes: { type: [String], default: [] },
 }, { versionKey: false });
 exports.User = mongoose_1.default.model('User', userSchema);

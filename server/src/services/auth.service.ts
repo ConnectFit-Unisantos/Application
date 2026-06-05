@@ -49,10 +49,19 @@ export async function registerAluno(input: {
       nome: user.nome,
       email: user.email,
       tipo: user.tipo,
-      criadoEm: user.criadoEm
-    }
+      criadoEm: user.criadoEm,
+
+      formacao: user.formacao,
+      servicos: user.servicos,
+      especializacao: user.especializacao,
+      precoHora: user.precoHora,
+      disponibilidade: user.disponibilidade,
+      bio: user.bio,
+      certificacoes: user.certificacoes,
+    },
   };
 }
+
 
 export async function login(input: { email: string; senha: string }) {
   const user = await User.findOne({ email: input.email });
@@ -78,8 +87,17 @@ export async function login(input: { email: string; senha: string }) {
       nome: user.nome,
       email: user.email,
       tipo: user.tipo,
-      criadoEm: user.criadoEm
-    }
+      criadoEm: user.criadoEm,
+
+      formacao: user.formacao,
+      servicos: user.servicos,
+      especializacao: user.especializacao,
+      precoHora: user.precoHora,
+      disponibilidade: user.disponibilidade,
+      bio: user.bio,
+      certificacoes: user.certificacoes,
+    },
   };
 }
+
 

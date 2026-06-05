@@ -43,6 +43,8 @@ export const API_CONFIG = {
   ENDPOINTS: {
     LOGIN:    '/api/auth/login',
     REGISTER: '/api/auth/register',
+    PERSONAL_ACTIVATE: '/api/auth/personal/activate',
     HEALTH:   '/health',
   },
+
 } as const;

@@ -59,6 +59,8 @@ export function useAuth() {
     handleLogin,
     handleRegister,
     logout: context.logout,
+    refreshSession: context.refreshSession,
     clearError,
+
   };
 }

@@ -101,6 +101,19 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
         {/* Dados */}
         <View style={styles.section}>
+          {user.tipo === 'aluno' && (
+            <TouchableOpacity
+              style={styles.personalBtn}
+              activeOpacity={0.85}
+              onPress={() =>
+                navigation.navigate('PersonalOnboarding')
+              }
+            >
+              <Ionicons name="fitness-outline" size={18} color={theme.colors.white} />
+              <Text style={styles.personalBtnText}>Sou Personal</Text>
+            </TouchableOpacity>
+          )}
+
           <Text style={styles.sectionTitle}>Detalhes</Text>
 
           <View style={styles.row}>
@@ -252,5 +265,22 @@ const styles = StyleSheet.create({
     fontSize: theme.fonts.sizes.base,
     fontWeight: theme.fonts.weights.bold,
   },
+
+  personalBtn: {
+    marginBottom: theme.spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 14,
+    borderRadius: theme.borderRadius.xl,
+  },
+  personalBtnText: {
+    color: theme.colors.text.white,
+    fontSize: theme.fonts.sizes.base,
+    fontWeight: theme.fonts.weights.bold,
+  },
 });
+
 

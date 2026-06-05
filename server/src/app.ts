@@ -3,19 +3,20 @@ import express from 'express';
 import cors from 'cors';
 
 import { authRoutes } from './routes/auth.routes';
+import { personalRoutes } from './routes/personal.routes';
 import { errorHandler } from './middlewares/errorHandler';
 import { connectDb } from './services/db';
 import { getEnv } from './config/env';
+
 
 const app = express();
 
 const env = getEnv();
 
-connectDb().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error('Failed to connect DB', err);
+connectDb().catch(() => {
   process.exit(1);
 });
+
 
 const corsOrigin = env.CORS_ORIGIN ? env.CORS_ORIGIN : true;
 app.use(cors({ origin: corsOrigin, credentials: true }));
@@ -26,16 +27,16 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', personalRoutes);
+
 
 app.use(errorHandler);
 
 const port = env.PORT;
 // env.PORT já valida se existe e é numérico positivo
 
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`connectfit-server running on http://localhost:${port}`);
-});
+app.listen(port, () => {});
+
 
 export default app;
 

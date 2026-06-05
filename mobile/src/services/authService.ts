@@ -3,6 +3,7 @@ import { storage } from '../utils/storage';
 import { API_CONFIG } from '../configs/api.config';
 import { AuthResponse, LoginInput, RegisterInput, User } from '../types';
 
+
 export const authService = {
   /**
    * Realiza login e persiste token + usuário localmente.

@@ -7,6 +7,7 @@ require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const auth_routes_1 = require("./routes/auth.routes");
+const personal_routes_1 = require("./routes/personal.routes");
 const errorHandler_1 = require("./middlewares/errorHandler");
 const db_1 = require("./services/db");
 const env_1 = require("./config/env");
@@ -24,6 +25,7 @@ app.get('/health', (_req, res) => {
     res.status(200).json({ ok: true });
 });
 app.use('/api/auth', auth_routes_1.authRoutes);
+app.use('/api/auth', personal_routes_1.personalRoutes);
 app.use(errorHandler_1.errorHandler);
 const port = env.PORT;
 // env.PORT já valida se existe e é numérico positivo
