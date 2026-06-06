@@ -4,7 +4,7 @@ Backend em **Node.js + TypeScript** para o aplicativo **ConnectFit**.
 
 Este serviço expõe uma **API REST** com autenticação por **JWT**, validação de payload com **Zod** e persistência em **MongoDB** via **Mongoose**.
 
-**LEMBRANDO** - Para fazer o teste do serviço com esse código é necessário um .env gerado pelo [MongoDB](https://www.mongodb.com), caso você não tenha um cadastro, basta criar uma conta, criar um cluster e seguir o passo a passo, o seu arquivo deve ficar como o .env.example
+**LEMBRANDO** - Para fazer o teste do projeto com esse código é necessário um .env gerado pelo [MongoDB](https://www.mongodb.com), caso você não tenha um cadastro, basta criar uma conta, criar um cluster e seguir o passo a passo, o seu arquivo deve ficar como o .env.example
 
 ---
 
