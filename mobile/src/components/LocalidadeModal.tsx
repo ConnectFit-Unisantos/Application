@@ -454,7 +454,7 @@ export default function LocalidadeModal({ visible, onClose, onSelect }: Props) {
 const s = StyleSheet.create({
   // overlay
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
 
