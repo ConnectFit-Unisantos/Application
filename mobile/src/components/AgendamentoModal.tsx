@@ -436,7 +436,7 @@ export default function AgendamentoModal({ visible, trainerName, onClose }: Prop
 const s = StyleSheet.create({
   // overlay
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
 

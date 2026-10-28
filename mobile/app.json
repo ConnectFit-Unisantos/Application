@@ -15,6 +15,11 @@
     "extra": {
       "EXPO_PUBLIC_API_HOST": "https://scoured-voting-jingle.ngrok-free.dev",
       "EXPO_PUBLIC_API_PORT": "433"
-    }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font",
+      "expo-status-bar"
+    ]
   }
 }
