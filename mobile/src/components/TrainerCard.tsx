@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Trainer } from '../types';
 import { theme } from '../styles/theme';
+import { formatPreco } from '../utils/format';
 
 interface TrainerCardProps {
   trainer: Trainer;
@@ -74,7 +75,9 @@ export default function TrainerCard({ trainer, onPress }: TrainerCardProps) {
             size={13}
             color={theme.colors.text.secondary}
           />
-          <Text style={styles.location}>{trainer.localizacao}</Text>
+          <Text style={styles.location}>
+            {trainer.localizacao || 'Localização não informada'}
+          </Text>
         </View>
 
         {/* Tags de especialidade */}
@@ -94,7 +97,7 @@ export default function TrainerCard({ trainer, onPress }: TrainerCardProps) {
             <Text style={styles.ratingCount}> ({trainer.avaliacoes})</Text>
           </View>
           <Text style={styles.price}>
-            R$ {trainer.preco}
+            {formatPreco(trainer.preco)}
             <Text style={styles.priceSuffix}>/hora</Text>
           </Text>
         </View>

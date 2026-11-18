@@ -7,6 +7,8 @@ import {
   Image,
   TouchableOpacity,
   StatusBar,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,6 +19,9 @@ import AgendamentoModal from '../components/AgendamentoModal';
 import { theme } from '../styles/theme';
 import { Review } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { formatPreco } from '../utils/format';
+import { useAuth } from '../hooks/useAuth';
+import { useAbrirConversa } from '../hooks/useAbrirConversa';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'TrainerDetail'>;
@@ -77,6 +82,35 @@ const trustStyles = StyleSheet.create({
 export default function TrainerDetailScreen({ navigation, route }: Props) {
   const { trainer } = route.params;
   const [showAgendamento, setShowAgendamento] = useState(false);
+  const { user } = useAuth();
+  const { abrir, abrindo } = useAbrirConversa();
+  const isOwn = !!user && user.id === trainer.id;
+
+  function handleAgendar() {
+    if (!user) {
+      Alert.alert('Entre para agendar', 'Faça login ou crie sua conta para agendar uma aula.', [
+        { text: 'Agora não', style: 'cancel' },
+        { text: 'Entrar', onPress: () => navigation.navigate('Login') },
+      ]);
+      return;
+    }
+    if (user.tipo !== 'aluno') {
+      Alert.alert('Indisponível', 'Contas de personal trainer não podem agendar aulas.');
+      return;
+    }
+    setShowAgendamento(true);
+  }
+
+  function handleMensagem() {
+    if (!user) {
+      Alert.alert('Entre para conversar', 'Faça login para enviar mensagens ao personal.', [
+        { text: 'Agora não', style: 'cancel' },
+        { text: 'Entrar', onPress: () => navigation.navigate('Login') },
+      ]);
+      return;
+    }
+    abrir({ id: trainer.id, nome: trainer.nome, tipo: 'personal' });
+  }
 
   return (
     <AppSafeArea style={styles.safeArea}>
@@ -149,7 +183,9 @@ export default function TrainerDetailScreen({ navigation, route }: Props) {
                   size={13}
                   color={theme.colors.text.secondary}
                 />
-                <Text style={styles.locationText}>{trainer.localizacao}</Text>
+                <Text style={styles.locationText}>
+                  {trainer.localizacao || 'Localização não informada'}
+                </Text>
               </View>
 
               <View style={styles.ratingRow}>
@@ -176,7 +212,7 @@ export default function TrainerDetailScreen({ navigation, route }: Props) {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Sobre</Text>
           <Text style={styles.bioText}>
-            {trainer.bio ?? 'Informações em breve.'}
+            {trainer.bio?.trim() ? trainer.bio : 'Informações em breve.'}
           </Text>
 
           <View style={styles.divider} />
@@ -203,7 +239,7 @@ export default function TrainerDetailScreen({ navigation, route }: Props) {
                 color={theme.colors.text.secondary}
               />
               <Text style={styles.statLabel}>Valor por hora</Text>
-              <Text style={styles.statValue}>R$ {trainer.preco}</Text>
+              <Text style={styles.statValue}>{formatPreco(trainer.preco)}</Text>
             </View>
           </View>
         </View>
@@ -257,40 +293,68 @@ export default function TrainerDetailScreen({ navigation, route }: Props) {
       {/* ── Rodapé fixo: agendamento ─────────────────────────────────────────── */}
       <View style={styles.footer}>
         <View style={styles.footerTop}>
-          <Text style={styles.footerLabel}>Agendar Aula</Text>
+          <Text style={styles.footerLabel}>{isOwn ? 'Seu perfil público' : 'Agendar Aula'}</Text>
           <View style={styles.footerPriceRow}>
-            <Text style={styles.footerPrice}>R$ {trainer.preco}</Text>
+            <Text style={styles.footerPrice}>{formatPreco(trainer.preco)}</Text>
             <Text style={styles.footerPriceSuffix}>/hora</Text>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.agendarBtn}
-          activeOpacity={0.85}
-          onPress={() => setShowAgendamento(true)}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={18}
-            color={theme.colors.white}
-          />
-          <Text style={styles.agendarBtnText}>Agendar Horário</Text>
-        </TouchableOpacity>
+        {isOwn ? (
+          <>
+            <TouchableOpacity
+              style={styles.agendarBtn}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Aulas')}
+            >
+              <Ionicons name="calendar-outline" size={18} color={theme.colors.white} />
+              <Text style={styles.agendarBtnText}>Ver minha agenda</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.mensagemBtn}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Disponibilidade')}
+            >
+              <Ionicons name="options-outline" size={18} color={theme.colors.text.primary} />
+              <Text style={styles.mensagemBtnText}>Gerenciar horários</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity style={styles.agendarBtn} activeOpacity={0.85} onPress={handleAgendar}>
+              <Ionicons name="calendar-outline" size={18} color={theme.colors.white} />
+              <Text style={styles.agendarBtnText}>Agendar Horário</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity style={styles.mensagemBtn} activeOpacity={0.85}>
-          <Ionicons
-            name="chatbubble-outline"
-            size={18}
-            color={theme.colors.text.primary}
-          />
-          <Text style={styles.mensagemBtnText}>Enviar Mensagem</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.mensagemBtn}
+              activeOpacity={0.85}
+              onPress={handleMensagem}
+              disabled={abrindo}
+            >
+              {abrindo ? (
+                <ActivityIndicator size="small" color={theme.colors.text.primary} />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble-outline" size={18} color={theme.colors.text.primary} />
+                  <Text style={styles.mensagemBtnText}>Enviar Mensagem</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
       </View>
       {/* ── Modal de agendamento ──────────────────────────────────────────── */}
       <AgendamentoModal
         visible={showAgendamento}
-        trainerName={trainer.nome}
+        trainer={{
+          id: trainer.id,
+          nome: trainer.nome,
+          preco: trainer.preco,
+          localizacao: trainer.localizacao,
+        }}
         onClose={() => setShowAgendamento(false)}
+        onVerAulas={() => navigation.navigate('Aulas')}
       />
     </AppSafeArea>
   );

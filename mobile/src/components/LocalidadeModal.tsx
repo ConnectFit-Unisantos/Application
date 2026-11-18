@@ -94,15 +94,23 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onSelect: (loc: LocalidadeSelecionada) => void;
+  /** Mostra a opção "Todo o estado". Default: true (filtro da Home). */
+  allowStateOnly?: boolean;
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
-type View = 'estados' | 'cidades';
+// Nome diferente de `View` (componente do React Native) para não conflitar
+type ModalStep = 'estados' | 'cidades';
 
-export default function LocalidadeModal({ visible, onClose, onSelect }: Props) {
+export default function LocalidadeModal({
+  visible,
+  onClose,
+  onSelect,
+  allowStateOnly = true,
+}: Props) {
   // Navegação interna
-  const [view, setView] = useState<View>('estados');
+  const [view, setView] = useState<ModalStep>('estados');
   const [selectedEstado, setSelectedEstado] = useState<Estado | null>(null);
 
   // Dados
@@ -363,7 +371,11 @@ export default function LocalidadeModal({ visible, onClose, onSelect }: Props) {
           <View style={s.headerCenter}>
             <Text style={s.headerTitle} numberOfLines={1}>{headerTitle}</Text>
             {!isEstados && (
-              <Text style={s.headerSub}>Escolha a cidade ou selecione o estado inteiro</Text>
+              <Text style={s.headerSub}>
+                {allowStateOnly
+                  ? 'Escolha a cidade ou selecione o estado inteiro'
+                  : 'Escolha a cidade'}
+              </Text>
             )}
           </View>
 
@@ -395,7 +407,7 @@ export default function LocalidadeModal({ visible, onClose, onSelect }: Props) {
         </View>
 
         {/* Opção "Todo o estado" — apenas na view de cidades */}
-        {!isEstados && !loading && !error && (
+        {allowStateOnly && !isEstados && !loading && !error && (
           <TouchableOpacity style={s.allStateRow} onPress={handleSelectEstadoOnly} activeOpacity={0.7}>
             <View style={s.allStateIconWrap}>
               <Ionicons name="map-outline" size={16} color={theme.colors.text.primary} />

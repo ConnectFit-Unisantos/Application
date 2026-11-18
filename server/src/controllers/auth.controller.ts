@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as authService from '../services/auth.service';
+import type { AuthRequest } from '../middlewares/auth.middleware';
 
 export async function registerAluno(req: Request, res: Response, next: NextFunction) {
   try {
@@ -21,5 +22,15 @@ export async function login(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-
-
+export async function me(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: 'Não autorizado' });
+    }
+    const result = await authService.me(userId);
+    return res.status(200).json(result);
+  } catch (err) {
+    return next(err);
+  }
+}

@@ -25,6 +25,23 @@ const userSchema = new Schema(
     uf: { type: String, default: '' },
     cidade: { type: String, default: '' },
 
+    // Agenda semanal do personal (horários em que aceita aulas)
+    // diaSemana: 0 = domingo ... 6 = sábado
+    agenda: {
+      type: [
+        {
+          _id: false,
+          diaSemana: { type: Number, required: true, min: 0, max: 6 },
+          horarios: { type: [String], default: [] },
+        },
+      ],
+      default: [],
+    },
+    // false = ainda não configurou; usa os dias do campo `disponibilidade` + horários padrão
+    agendaConfigurada: { type: Boolean, default: false },
+    // Datas sem atendimento (folgas), formato YYYY-MM-DD
+    datasBloqueadas: { type: [String], default: [] },
+
   },
   { versionKey: false }
 );

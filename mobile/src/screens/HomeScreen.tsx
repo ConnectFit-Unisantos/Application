@@ -26,13 +26,7 @@ import { Trainer } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../hooks/useAuth';
 import { personalService } from '../services/personalService';
-
-
-// Remove acentos e normaliza caixa para comparações tolerantes
-
-function normalizeStr(text: string): string {
-  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-}
+import { formatTag, normalizeStr } from '../utils/format';
 
 
 type HomeScreenProps = {
@@ -60,7 +54,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       setIsLoadingPersonals(true);
       const res = await personalService.listPersonals();
 
-      setPersonals(Array.isArray(res) ? (res as Trainer[]) : []);
+      setPersonals(Array.isArray(res) ? res : []);
     } catch {
       setPersonals([]);
     } finally {
@@ -87,11 +81,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
 
 
+  // Especialidades únicas ignorando maiúsculas/acentos ("hipertrofia" == "Hipertrofia")
   const todasEspecialidades = useMemo(() => {
-
-    const set = new Set<string>();
-    sourceTrainers.forEach((t) => t.especialidades.forEach((e) => set.add(e)));
-    return Array.from(set).sort();
+    const map = new Map<string, string>();
+    sourceTrainers.forEach((t) =>
+      t.especialidades.forEach((e) => {
+        const key = normalizeStr(e);
+        if (key && !map.has(key)) map.set(key, formatTag(e));
+      }),
+    );
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }, [sourceTrainers]);
 
 
@@ -99,32 +98,34 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     const out = sourceTrainers.filter((trainer) => {
       // Busca por nome
       const matchesSearch =
-        search.trim() === '' ||
-        trainer.nome.toLowerCase().includes(search.toLowerCase().trim());
+        search.trim() === '' || normalizeStr(trainer.nome).includes(normalizeStr(search));
 
-      // Filtro de especialidade
+      // Filtro de especialidade (sem diferenciar maiúsculas/acentos)
       const matchesEspecialidade =
         !selectedEspecialidade ||
-        trainer.especialidades.includes(selectedEspecialidade);
+        trainer.especialidades.some(
+          (e) => normalizeStr(e) === normalizeStr(selectedEspecialidade),
+        );
 
       // Filtro de localidade (estado e/ou cidade)
-      // IMPORTANTE: o backend pode retornar localizacao vazio.
-      // Nesse caso, não faz sentido filtrar por UF/cidade -> consideramos como "matches".
+      // Personal sem localidade cadastrada NÃO aparece quando há filtro de localidade.
       const matchesLocalidade = (() => {
         if (!localidade) return true;
-        if (!trainer.localizacao || trainer.localizacao.trim() === '') return true;
-        if (!trainer.localizacao || trainer.localizacao.trim() === '') return true;
 
-        const partes = trainer.localizacao.split(' - ');
-        const uf = partes[partes.length - 1]?.trim() ?? '';
-        const cidade = partes.slice(0, -1).join(' - ').trim();
-        if (localidade.cidade) {
-          return (
-            uf === localidade.uf &&
-            normalizeStr(cidade) === normalizeStr(localidade.cidade)
-          );
+        let uf = trainer.uf?.trim() ?? '';
+        let cidade = trainer.cidade?.trim() ?? '';
+
+        // Compatibilidade: extrai de "Cidade - UF" se uf/cidade não vierem separados
+        if ((!uf || !cidade) && trainer.localizacao?.trim()) {
+          const partes = trainer.localizacao.split(' - ');
+          uf = partes[partes.length - 1]?.trim() ?? '';
+          cidade = partes.slice(0, -1).join(' - ').trim();
         }
-        return uf === localidade.uf;
+
+        if (!uf) return false;
+        if (uf.toUpperCase() !== localidade.uf.toUpperCase()) return false;
+        if (!localidade.cidade) return true;
+        return normalizeStr(cidade) === normalizeStr(localidade.cidade);
       })();
 
       return matchesSearch && matchesEspecialidade && matchesLocalidade;
@@ -185,7 +186,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 key={esp}
                 style={[
                   styles.modalOption,
-                  selectedEspecialidade === esp && styles.modalOptionSelected,
+                  selectedEspecialidade !== null &&
+                    normalizeStr(selectedEspecialidade) === normalizeStr(esp) &&
+                    styles.modalOptionSelected,
                 ]}
                 activeOpacity={0.7}
                 onPress={() => {
@@ -196,7 +199,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 <Text
                   style={[
                     styles.modalOptionText,
-                    selectedEspecialidade === esp && styles.modalOptionTextSelected,
+                    selectedEspecialidade !== null &&
+                      normalizeStr(selectedEspecialidade) === normalizeStr(esp) &&
+                      styles.modalOptionTextSelected,
                   ]}
                 >
                   {esp}

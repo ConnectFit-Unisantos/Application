@@ -14,7 +14,7 @@
     },
     "extra": {
       "EXPO_PUBLIC_API_HOST": "https://scoured-voting-jingle.ngrok-free.dev",
-      "EXPO_PUBLIC_API_PORT": "433"
+      "EXPO_PUBLIC_API_PORT": "443"
     },
     "plugins": [
       "expo-asset",

@@ -7,19 +7,7 @@ import { personalActivateSchema } from '../validators/auth.validators';
 export const personalRoutes = Router();
 
 // Listagem pública (Home busca)
-personalRoutes.get('/personals', (req, res, next) => listPersonals(req as any, res as any, next));
+personalRoutes.get('/personals', listPersonals);
 
-
-// Ativação de personal (precisa estar logado)
-personalRoutes.post(
-  '/personal/activate',
-  requireAuth,
-  personalActivateSchema,
-  activatePersonal,
-);
-
-
-
-
-
-
+// Ativação de personal (precisa estar logado) — rota registrada só aqui
+personalRoutes.post('/personal/activate', requireAuth, personalActivateSchema, activatePersonal);

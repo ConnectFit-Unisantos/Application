@@ -24,6 +24,16 @@ export const theme = {
     errorBg: '#FEF2F2',
     errorBorder: '#FECACA',
 
+    // Status das aulas (badges)
+    status: {
+      pendente: { fg: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
+      confirmada: { fg: '#15803D', bg: '#F0FDF4', border: '#BBF7D0' },
+      concluida: { fg: '#374151', bg: '#F3F4F6', border: '#E5E7EB' },
+      cancelada: { fg: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
+      recusada: { fg: '#B91C1C', bg: '#FEF2F2', border: '#FECACA' },
+    },
+    success: '#16A34A',
+
     text: {
       primary: '#111827',
       secondary: '#6B7280',

@@ -1,34 +1,12 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
 import { User } from '../models/User';
+import { httpError, signToken, toPublicUser } from '../utils/user';
 
-export type TokenPayload = {
-  sub: string; // userId
-  tipo: 'aluno' | 'personal';
-};
-
-function signToken(payload: TokenPayload) {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('JWT_SECRET is not set');
-
-  const expiresIn = process.env.JWT_EXPIRES_IN ?? '7d';
-
-  // Tipagem do jsonwebtoken pode variar; para evitar conflito de tipos no TS,
-  // passamos expiresIn como qualquer.
-  return jwt.sign(payload as any, secret as any, { expiresIn: expiresIn as any });
-}
-
-export async function registerAluno(input: {
-  nome: string;
-  email: string;
-  senha: string;
-}) {
+export async function registerAluno(input: { nome: string; email: string; senha: string }) {
   const existing = await User.findOne({ email: input.email });
   if (existing) {
-    const e = new Error('Email já cadastrado');
-    (e as any).statusCode = 409;
-    throw e;
+    throw httpError(409, 'Email já cadastrado');
   }
 
   const senhaHash = await bcrypt.hash(input.senha, 10);
@@ -37,67 +15,35 @@ export async function registerAluno(input: {
     nome: input.nome,
     email: input.email,
     senhaHash,
-    tipo: 'aluno'
+    tipo: 'aluno',
   });
 
-  const token = signToken({ sub: String(user._id), tipo: user.tipo });
+  const token = signToken({ sub: String(user._id), tipo: user.tipo as 'aluno' | 'personal' });
 
-  return {
-    token,
-    user: {
-      id: String(user._id),
-      nome: user.nome,
-      email: user.email,
-      tipo: user.tipo,
-      criadoEm: user.criadoEm,
-
-      formacao: user.formacao,
-      servicos: user.servicos,
-      especializacao: user.especializacao,
-      precoHora: user.precoHora,
-      disponibilidade: user.disponibilidade,
-      bio: user.bio,
-      certificacoes: user.certificacoes,
-    },
-  };
+  return { token, user: toPublicUser(user) };
 }
-
 
 export async function login(input: { email: string; senha: string }) {
   const user = await User.findOne({ email: input.email });
   if (!user) {
-    const e = new Error('Credenciais inválidas');
-    (e as any).statusCode = 401;
-    throw e;
+    throw httpError(401, 'Credenciais inválidas');
   }
 
   const ok = await bcrypt.compare(input.senha, user.senhaHash);
   if (!ok) {
-    const e = new Error('Credenciais inválidas');
-    (e as any).statusCode = 401;
-    throw e;
+    throw httpError(401, 'Credenciais inválidas');
   }
 
-  const token = signToken({ sub: String(user._id), tipo: user.tipo });
+  const token = signToken({ sub: String(user._id), tipo: user.tipo as 'aluno' | 'personal' });
 
-  return {
-    token,
-    user: {
-      id: String(user._id),
-      nome: user.nome,
-      email: user.email,
-      tipo: user.tipo,
-      criadoEm: user.criadoEm,
-
-      formacao: user.formacao,
-      servicos: user.servicos,
-      especializacao: user.especializacao,
-      precoHora: user.precoHora,
-      disponibilidade: user.disponibilidade,
-      bio: user.bio,
-      certificacoes: user.certificacoes,
-    },
-  };
+  return { token, user: toPublicUser(user) };
 }
 
-
+/** Dados atualizados do usuário logado (usado pelo app para validar a sessão). */
+export async function me(userId: string) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw httpError(401, 'Usuário não encontrado. Faça login novamente.');
+  }
+  return { user: toPublicUser(user) };
+}

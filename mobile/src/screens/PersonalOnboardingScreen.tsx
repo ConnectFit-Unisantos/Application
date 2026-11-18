@@ -20,9 +20,8 @@ import { useAuth } from '../hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { api } from '../services/api';
-import { API_CONFIG } from '../configs/api.config';
-import { storage } from '../utils/storage';
+import type { ApiError } from '../services/api';
+import { parsePreco } from '../utils/format';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'PersonalOnboarding'>;
@@ -36,9 +35,7 @@ function splitCsv(value: string): string[] {
 }
 
 export default function PersonalOnboardingScreen({ navigation }: Props) {
-  const { user, refreshSession } = useAuth();
-
-  
+  const { user, activatePersonal } = useAuth();
 
 
   const [formacao, setFormacao] = useState('');
@@ -67,8 +64,12 @@ export default function PersonalOnboardingScreen({ navigation }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const precoNumero = parsePreco(precoHora);
+  const precoInvalido = precoHora.trim() !== '' && !(precoNumero > 0);
+
   const canSubmit = useMemo(() => {
     return (
+      precoNumero > 0 &&
       !!bio.trim() &&
       !!formacao.trim() &&
       !!servicos.trim() &&
@@ -77,7 +78,7 @@ export default function PersonalOnboardingScreen({ navigation }: Props) {
       !!uf.trim() &&
       !!cidade.trim()
     );
-  }, [bio, formacao, servicos, especializacao, certificacoes, uf, cidade]);
+  }, [precoNumero, bio, formacao, servicos, especializacao, certificacoes, uf, cidade]);
 
 
   async function handleSubmit() {
@@ -88,56 +89,27 @@ export default function PersonalOnboardingScreen({ navigation }: Props) {
       setIsSubmitting(true);
       setError(null);
 
-      const token = await storage.getToken();
-      if (!token) throw new Error('Sessão expirada. Faça login novamente.');
-
-      const endpoint = API_CONFIG.ENDPOINTS.PERSONAL_ACTIVATE;
-
-      const payload = {
+      // O backend valida, normaliza e devolve { token, user } (token novo com tipo 'personal').
+      // O contexto atualiza token + usuário em memória e no armazenamento.
+      await activatePersonal({
         formacao: splitCsv(formacao),
         servicos: splitCsv(servicos),
         especializacao: splitCsv(especializacao),
-        precoHora: precoHora.trim(),
-        disponibilidade: disponibilidade.trim(),
+        precoHora: String(precoNumero),
+        disponibilidade: splitCsv(disponibilidade).join(', '),
         bio: bio.trim(),
         certificacoes: splitCsv(certificacoes),
         uf: uf.trim(),
         cidade: cidade.trim(),
-      };
-
-
-      const res = (await api.post<{ token: string; user: any }>(
-        endpoint,
-        payload,
-        true, // authenticated
-      )) as { token: string; user: any };
-
-      // Backend retorna user atualizado
-      // IMPORTANTE: o endpoint /personal/activate atualmente retorna somente user (sem token)
-      // então tratamos a resposta de forma tolerante.
-      const returnedUser = (res as any)?.user ?? (res as any);
-
-      if (!returnedUser) {
-        throw new Error('Resposta inválida do servidor (user ausente).');
-      }
-
-
-      // O endpoint pode (ou não) retornar token novo. Se vier, persistimos.
-      if (res?.token) {
-        await storage.saveToken(res.token);
-      }
-
-      // Persistência tolerante: backend pode retornar { user } ou o próprio user
-      if (returnedUser) {
-        await storage.saveUser(returnedUser as any);
-      }
-
-      // Atualiza o AuthContext em memória para refletir imediatamente nas telas atuais
-      await refreshSession();
+      });
 
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-
     } catch (e: unknown) {
+      if ((e as ApiError)?.statusCode === 401) {
+        // Sessão inválida (ex: usuário apagado) — o contexto já fez logout
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        return;
+      }
       const message = e instanceof Error ? e.message : 'Erro ao cadastrar personal';
       setError(message);
     } finally {
@@ -157,10 +129,9 @@ export default function PersonalOnboardingScreen({ navigation }: Props) {
         <LocalidadeModal
           visible={showLocModal}
           onClose={() => setShowLocModal(false)}
-        onSelect={(loc: any) => {
-          handleLocationSelect(loc);
-          // garante que UF/cidade estejam preenchidos antes de fechar
-        }}
+          onSelect={handleLocationSelect}
+          // Personal precisa informar a cidade (sem opção "todo o estado")
+          allowStateOnly={false}
         />
 
         <ScrollView
@@ -193,15 +164,16 @@ export default function PersonalOnboardingScreen({ navigation }: Props) {
             />
 
             <FormInput
-              label="Preço/hora"
-              placeholder="Ex: 120"
+              label="Preço/hora (R$)"
+              placeholder="Ex: 120 ou 120,50"
               value={precoHora}
               onChangeText={setPrecoHora}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
+              error={precoInvalido ? 'Informe um valor maior que zero (ex: 120 ou 120,50)' : undefined}
             />
 
             <FormInput
-              label="Disponibilidade"
+              label="Disponibilidade (separe por vírgula)"
               placeholder="Ex: Segunda, Quarta, Sexta"
               value={disponibilidade}
               onChangeText={setDisponibilidade}
@@ -238,6 +210,12 @@ export default function PersonalOnboardingScreen({ navigation }: Props) {
               <Ionicons name="chevron-down" size={16} color={theme.colors.text.secondary} />
             </TouchableOpacity>
 
+
+            {!canSubmit && !isSubmitting && (
+              <Text style={styles.hintText}>
+                Preencha todos os campos (disponibilidade é opcional) e selecione estado e cidade.
+              </Text>
+            )}
 
             {!!error && (
               <View style={styles.errorBanner}>
@@ -340,6 +318,12 @@ const styles = StyleSheet.create({
     fontSize: theme.fonts.sizes.md,
     color: theme.colors.text.primary,
     fontWeight: theme.fonts.weights.medium,
+  },
+
+  hintText: {
+    fontSize: theme.fonts.sizes.xs,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
 
   submitBtnText: {

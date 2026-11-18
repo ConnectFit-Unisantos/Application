@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import Header from '../components/Header';
 import { useAuth } from '../hooks/useAuth';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { formatPreco, parsePreco } from '../utils/format';
+import { chatService } from '../services/chatService';
+import { useRealtimeEvent } from '../hooks/useRealtime';
 
 type ProfileScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
@@ -38,7 +42,35 @@ function formatDate(value: unknown): string {
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, validateSession } = useAuth();
+
+  // Sempre que a tela ganha foco, confirma no backend que o usuário ainda existe.
+  // Se foi apagado (401), o contexto faz logout e o efeito abaixo redireciona.
+  const [naoLidas, setNaoLidas] = useState(0);
+
+  const atualizarNaoLidas = useCallback(() => {
+    chatService
+      .naoLidas()
+      .then(setNaoLidas)
+      .catch(() => {});
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      validateSession();
+      atualizarNaoLidas();
+    }, [validateSession, atualizarNaoLidas]),
+  );
+
+  // Contador de mensagens não lidas em tempo real
+  useRealtimeEvent('conversa:atualizada', atualizarNaoLidas);
+
+  // Redireciona fora do render (chamar navigation durante o render gera warning)
+  useEffect(() => {
+    if (!user) {
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    }
+  }, [user, navigation]);
 
   const tipoLabel = useMemo(() => {
     if (!user) return '-';
@@ -51,9 +83,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   }
 
   if (!user) {
-    // Como não temos um fluxo real de auth guard aqui,
-    // redirecionamos para manter consistência de UX.
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     return null;
   }
 
@@ -114,6 +143,35 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </TouchableOpacity>
           )}
 
+          <Text style={styles.sectionTitle}>
+            {user.tipo === 'personal' ? 'Área do personal' : 'Minha área'}
+          </Text>
+
+          <View style={styles.menu}>
+            <MenuItem
+              icon="calendar-outline"
+              label={user.tipo === 'personal' ? 'Agenda' : 'Minhas Aulas'}
+              hint={user.tipo === 'personal' ? 'Solicitações e aulas dos alunos' : 'Aulas agendadas e histórico'}
+              onPress={() => navigation.navigate('Aulas')}
+            />
+            {user.tipo === 'personal' && (
+              <MenuItem
+                icon="options-outline"
+                label="Disponibilidade"
+                hint="Dias e horários de atendimento"
+                onPress={() => navigation.navigate('Disponibilidade')}
+              />
+            )}
+            <MenuItem
+              icon="chatbubbles-outline"
+              label="Mensagens"
+              hint={user.tipo === 'personal' ? 'Conversas com alunos' : 'Conversas com personal trainers'}
+              badge={naoLidas}
+              onPress={() => navigation.navigate('Conversas')}
+              last
+            />
+          </View>
+
           <Text style={styles.sectionTitle}>Detalhes</Text>
 
           <View style={styles.row}>
@@ -126,10 +184,31 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Text style={styles.rowValue}>{user.email}</Text>
           </View>
 
-          <View style={styles.row}>
+          <View style={[styles.row, user.tipo === 'personal' && styles.rowBorder]}>
             <Text style={styles.rowLabel}>Criado em</Text>
             <Text style={styles.rowValue}>{formatDate(user.criadoEm)}</Text>
           </View>
+
+          {user.tipo === 'personal' && (
+            <>
+              <View style={[styles.row, styles.rowBorder]}>
+                <Text style={styles.rowLabel}>Localização</Text>
+                <Text style={styles.rowValue}>
+                  {user.cidade && user.uf ? `${user.cidade} - ${user.uf}` : '-'}
+                </Text>
+              </View>
+              <View style={[styles.row, styles.rowBorder]}>
+                <Text style={styles.rowLabel}>Especialidades</Text>
+                <Text style={styles.rowValue}>
+                  {user.especializacao?.length ? user.especializacao.join(', ') : '-'}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Preço/hora</Text>
+                <Text style={styles.rowValue}>{formatPreco(parsePreco(user.precoHora ?? ''))}</Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Logout */}
@@ -146,7 +225,85 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   );
 }
 
+function MenuItem({
+  icon,
+  label,
+  hint,
+  badge = 0,
+  onPress,
+  last,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  hint: string;
+  badge?: number;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  return (
+    <TouchableOpacity style={[styles.menuItem, !last && styles.rowBorder]} onPress={onPress} activeOpacity={0.75}>
+      <View style={styles.menuIcon}>
+        <Ionicons name={icon} size={18} color={theme.colors.text.primary} />
+      </View>
+      <View style={styles.menuInfo}>
+        <Text style={styles.menuLabel}>{label}</Text>
+        <Text style={styles.menuHint}>{hint}</Text>
+      </View>
+      {badge > 0 && (
+        <View style={styles.menuBadge}>
+          <Text style={styles.menuBadgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      )}
+      <Ionicons name="chevron-forward" size={16} color={theme.colors.text.muted} />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
+  menu: {
+    marginBottom: theme.spacing.lg,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.inputBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuInfo: {
+    flex: 1,
+  },
+  menuLabel: {
+    fontSize: theme.fonts.sizes.md,
+    fontWeight: theme.fonts.weights.semibold,
+    color: theme.colors.text.primary,
+  },
+  menuHint: {
+    fontSize: theme.fonts.sizes.xs,
+    color: theme.colors.text.secondary,
+    marginTop: 1,
+  },
+  menuBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    backgroundColor: theme.colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuBadgeText: {
+    color: theme.colors.white,
+    fontSize: 11,
+    fontWeight: theme.fonts.weights.bold,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.dark,

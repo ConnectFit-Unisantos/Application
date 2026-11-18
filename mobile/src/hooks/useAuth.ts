@@ -1,28 +1,33 @@
 import { useState } from 'react';
 import { useAuthContext } from '../contexts/AuthContext';
+import type { ApiError } from '../services/api';
 import { LoginInput, RegisterInput } from '../types';
 
 /**
  * Hook de autenticação para uso nas telas.
- * Encapsula o estado de loading/erro do submit e
- * expõe handleLogin / handleRegister prontos para uso.
+ * Encapsula loading/erro do submit e expõe handleLogin / handleRegister.
+ * `fieldErrors` traz os erros por campo devolvidos pelo backend.
  */
 export function useAuth() {
   const context = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  async function handleLogin(input: LoginInput) {
+  function handleError(err: unknown, fallback: string) {
+    const apiErr = err as ApiError;
+    setError(err instanceof Error && err.message ? err.message : fallback);
+    setFieldErrors(apiErr?.fields ?? {});
+  }
+
+  async function handleLogin(input: LoginInput, persist = false) {
     try {
       setIsSubmitting(true);
       setError(null);
-      return await context.login(input);
+      setFieldErrors({});
+      return await context.login(input, persist);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Erro ao fazer login. Tente novamente.';
-      setError(message);
+      handleError(err, 'Erro ao fazer login. Tente novamente.');
       throw err;
     } finally {
       setIsSubmitting(false);
@@ -33,13 +38,10 @@ export function useAuth() {
     try {
       setIsSubmitting(true);
       setError(null);
+      setFieldErrors({});
       return await context.register(input);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Erro ao criar conta. Tente novamente.';
-      setError(message);
+      handleError(err, 'Erro ao criar conta. Tente novamente.');
       throw err;
     } finally {
       setIsSubmitting(false);
@@ -48,6 +50,7 @@ export function useAuth() {
 
   function clearError() {
     setError(null);
+    setFieldErrors({});
   }
 
   return {
@@ -56,11 +59,13 @@ export function useAuth() {
     isLoading: context.isLoading,
     isSubmitting,
     error,
+    fieldErrors,
     handleLogin,
     handleRegister,
+    activatePersonal: context.activatePersonal,
     logout: context.logout,
     refreshSession: context.refreshSession,
+    validateSession: context.validateSession,
     clearError,
-
   };
 }

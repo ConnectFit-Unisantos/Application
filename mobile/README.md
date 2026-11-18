@@ -28,6 +28,9 @@ O app consome a API do backend (Express) para:
 - **Home**: busca e filtros de personais (nome/busca, especialidade, localidade) + listagem via `personalService`.
 - **Perfil**: exibe dados do usuário; quando o `tipo` é `aluno`, mostra acesso ao onboarding de personal.
 - **Onboarding de Personal**: formulário com campos profissionais e envio para endpoint autenticado.
+- **Agendamento**: aluno escolhe data/horário livres (vindos do backend), revisa e confirma; acompanha em "Minhas Aulas" (status pendente/confirmada/concluída/cancelada/recusada) e pode cancelar.
+- **Agenda do personal**: solicitações, confirmadas e histórico; confirmar/recusar/cancelar; tela de Disponibilidade (horários semanais e folgas).
+- **Chat**: conversas aluno ↔ personal com histórico, não lidas e atualização em tempo real (Socket.IO, `src/services/realtime.ts`).
 
 ---
 
@@ -54,7 +57,12 @@ Para rodar em dispositivos:
 
 ## Configuração de API
 
-O endpoint do backend é configurado em `src/configs/api.config.ts`.
+O endereço do backend é lido nesta ordem (ver `src/configs/api.config.ts`):
+1. `mobile/.env` → `EXPO_PUBLIC_API_HOST` / `EXPO_PUBLIC_API_PORT` (copie de `.env.example`)
+2. `app.json` → `expo.extra`
+3. Padrão local: `10.0.2.2:3333` (emulador Android) ou `localhost:3333`
+
+Depois de alterar o `.env`, reinicie com `npx expo start -c`.
 
 ---
 
@@ -62,6 +70,4 @@ O endpoint do backend é configurado em `src/configs/api.config.ts`.
 
 - `expo build:android`
 - `expo build:ios`
-
-(Se quiser, o pipeline pode ser documentado conforme o fluxo do seu curso/equipe.)
 

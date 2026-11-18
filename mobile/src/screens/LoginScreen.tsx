@@ -51,7 +51,7 @@ function validate(email: string, senha: string): FieldErrors {
 // ─── Tela ─────────────────────────────────────────────────────────────────────
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const { handleLogin, isSubmitting, error, clearError } = useAuth();
+  const { handleLogin, isSubmitting, error, fieldErrors: apiFieldErrors, clearError } = useAuth();
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -71,7 +71,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     clearError();
 
     try {
-      await handleLogin({ email: email.trim().toLowerCase(), senha });
+      // "Manter conectado": só grava a sessão no aparelho se marcado
+      await handleLogin({ email: email.trim().toLowerCase(), senha }, manterConectado);
       // Depois do login, navega para Home
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch {
@@ -110,7 +111,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                   setFieldErrors((p) => ({ ...p, email: '' }));
                 }
               }}
-              error={fieldErrors.email}
+              error={fieldErrors.email || apiFieldErrors.email}
             />
 
             {/* ── Senha ── */}
@@ -125,7 +126,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                   setFieldErrors((p) => ({ ...p, senha: '' }));
                 }
               }}
-              error={fieldErrors.senha}
+              error={fieldErrors.senha || apiFieldErrors.senha}
             />
 
             {/* ── Manter conectado ── */}

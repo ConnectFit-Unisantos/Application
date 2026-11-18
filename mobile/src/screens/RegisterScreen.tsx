@@ -73,7 +73,8 @@ function validate(
 // ─── Tela ─────────────────────────────────────────────────────────────────────
 
 export default function RegisterScreen({ navigation }: RegisterScreenProps) {
-  const { handleRegister, isSubmitting, error, clearError } = useAuth();
+  const { handleRegister, isSubmitting, error, fieldErrors: apiFieldErrors, clearError } =
+    useAuth();
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -107,7 +108,8 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         email: email.trim().toLowerCase(),
         senha,
       });
-      navigation.navigate('Home');
+      // reset: o botão "voltar" não retorna ao formulário de cadastro
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch {
       // erro já tratado pelo hook — exibido no banner abaixo do formulário
     }
@@ -141,7 +143,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
                 setNome(v);
                 clearFieldError('nome');
               }}
-              error={fieldErrors.nome}
+              error={fieldErrors.nome || apiFieldErrors.nome}
             />
 
             {/* ── Email ── */}
@@ -155,7 +157,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
                 setEmail(v);
                 clearFieldError('email');
               }}
-              error={fieldErrors.email}
+              error={fieldErrors.email || apiFieldErrors.email}
             />
 
             {/* ── Senha ── */}
@@ -168,7 +170,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
                 setSenha(v);
                 clearFieldError('senha');
               }}
-              error={fieldErrors.senha}
+              error={fieldErrors.senha || apiFieldErrors.senha}
             />
 
             {/* ── Confirmação de Senha ── */}
